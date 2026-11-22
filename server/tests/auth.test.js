@@ -104,6 +104,22 @@ describe('POST /api/auth/register', () => {
     expect(res.body.success).toBe(false);
   });
 
+  it('rejects a password shorter than 10 characters', async () => {
+    const res = await registerUser({ ...VALID_USER, password: '123456789' });
+    expect(res.status).toBe(400);
+    expect(res.body.message).toMatch(/at least 10 characters/);
+  });
+
+  it('issues an httpOnly, SameSite=Strict session cookie with a JWT-aligned lifetime', async () => {
+    const res = await registerUser();
+    expect(res.status).toBe(201);
+    const cookie = res.headers['set-cookie']?.find((value) => value.startsWith('fintrack_token='));
+    expect(cookie).toBeDefined();
+    expect(cookie).toMatch(/HttpOnly/i);
+    expect(cookie).toMatch(/SameSite=Strict/i);
+    expect(cookie).toMatch(/Max-Age=3600(?:;|$)/i); // test setup uses JWT_EXPIRES_IN=1h
+  });
+
   it('returns 400 when body is completely empty', async () => {
     const res = await request(app).post('/api/auth/register').send({});
     expect(res.status).toBe(400);

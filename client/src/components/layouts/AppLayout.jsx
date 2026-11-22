@@ -47,13 +47,14 @@ const AppLayout = () => {
           <p className="sidebar-name">{user.name}</p>
           <p className="sidebar-email">{user.email}</p>
           <label className="sidebar-currency">
-            <span>Currency</span>
+            <span>Display currency (no conversion)</span>
             <select value={user.currency || 'INR'} onChange={handleCurrencyChange}>
               {SUPPORTED_CURRENCIES.map((code) => (
                 <option key={code} value={code}>{code}</option>
               ))}
             </select>
           </label>
+          <p className="muted" style={{ fontSize: 11, marginTop: 4 }}>Changing the currency label does not convert saved amounts. Keep all transactions in the same currency.</p>
           <button className="btn btn-ghost sidebar-logout" onClick={handleLogout}>
             <LogOut size={16} /> Log out
           </button>
