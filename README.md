@@ -162,9 +162,17 @@ npm start          # starts the Express server; it serves the SPA from client/di
 
 ## Screenshots
 
-The repository contains a [screenshot workflow](.github/workflows/screenshots.yml) that builds the real React frontend and captures its **landing, sign-in, and registration pages** in Chromium. It can be started from **GitHub → Actions → Capture real app screenshots → Run workflow**.
+These screenshots are captured **from the actual built React application**, not design mockups. They show the public pages; authenticated dashboards require a safe demo account.
 
-Screenshots will be placed in `docs/screenshots/` after a successful run. No screenshots of a logged-in dashboard are included until a safe demo dataset is available.
+**Landing page**
+
+![FinTrack landing page](docs/screenshots/landing.png)
+
+| Sign in | Create account |
+| --- | --- |
+| ![FinTrack sign-in page](docs/screenshots/login.png) | ![FinTrack registration page](docs/screenshots/register.png) |
+
+The [screenshot workflow](.github/workflows/screenshots.yml) regenerates these from Chromium when the frontend changes. Production deployments and CI checks are tracked in [GitHub Actions](.github/workflows/ci.yml).
 
 ---
 

@@ -49,7 +49,7 @@ const RegisterPage = () => {
       <div className="auth-main">
         <div className="auth-card">
           <h1>Create account</h1>
-          <p className="muted auth-lead">Name, email, and a password of at least 6 characters.</p>
+          <p className="muted auth-lead">Name, email, and a password of at least 10 characters.</p>
           {error && <div className="alert alert-error">{error}</div>}
           <form onSubmit={handleSubmit}>
             <div className="form-group">
@@ -62,7 +62,7 @@ const RegisterPage = () => {
             </div>
             <div className="form-group">
               <label className="form-label" htmlFor="password">Password</label>
-              <input id="password" type="password" name="password" value={formData.password} onChange={handleChange} required minLength={6} autoComplete="new-password" />
+              <input id="password" type="password" name="password" value={formData.password} onChange={handleChange} required minLength={10} maxLength={72} autoComplete="new-password" />
             </div>
             <Button type="submit" loading={isLoading} style={{ width: '100%' }}>Sign up</Button>
           </form>

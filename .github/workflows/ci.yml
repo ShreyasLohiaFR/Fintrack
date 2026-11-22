@@ -1,0 +1,61 @@
+name: Quality checks
+
+on:
+  push:
+    branches: [main, "improve/**"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backend-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+      - name: Install backend dependencies
+        run: npm ci --prefix server
+      - name: Preload temporary MongoDB for reliable CI startup
+        run: |
+          node -e "const { MongoMemoryServer } = require('./server/node_modules/mongodb-memory-server'); (async () => { const db = await MongoMemoryServer.create(); await db.stop(); })().catch(err => { console.error(err); process.exit(1); });"
+      - name: Run isolated integration tests
+        run: npm test --prefix server -- --runInBand
+
+  frontend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+      - run: npm ci --prefix client
+      - name: Lint React application
+        run: npm run lint --prefix client
+      - name: Build React application
+        run: npm run build --prefix client
+
+  dependency-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Existing third-party dependency advisories must be reviewed before
+    # changing major versions. Display issues now; Dependabot opens patch PRs.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Audit backend production dependencies
+        run: npm audit --prefix server --omit=dev --audit-level=high
+      - name: Audit frontend production dependencies
+        run: npm audit --prefix client --omit=dev --audit-level=high
