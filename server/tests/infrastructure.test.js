@@ -115,6 +115,11 @@ describe('Express app', () => {
     expect(app._server).toBeUndefined();
   });
 
+  it('sets no-store on API responses to avoid caching financial data', async () => {
+    const res = await request(app).get('/api/health');
+    expect(res.headers['cache-control']).toBe('no-store');
+  });
+
   it('GET /api/health responds 200', async () => {
     const res = await request(app).get('/api/health');
     expect(res.status).toBe(200);

@@ -5,6 +5,7 @@ const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
 const dotenv = require('dotenv');
 const connectDB = require('./config/db');
+const mongoose = require('mongoose');
 const errorHandler = require('./middleware/errorHandler');
 const { apiLimiter } = require('./middleware/rateLimit');
 
@@ -42,6 +43,11 @@ if (KNOWN_WEAK_SECRETS.includes(jwtSecret)) {
 }
 
 const app = express();
+app.disable('x-powered-by');
+
+// Render runs behind one trusted reverse proxy. Rate limiting must use the
+// real forwarded client IP instead of treating every visitor as one IP.
+if (process.env.NODE_ENV === 'production') app.set('trust proxy', 1);
 
 // Security headers. In production the API also serves the built SPA, so the
 // CSP must allow the Vite bundle, Google Fonts and React inline styles.
@@ -59,8 +65,10 @@ app.use(helmet({
 }));
 
 const CORS_ORIGINS = process.env.CORS_ORIGINS
-  ? process.env.CORS_ORIGINS.split(',').map((origin) => origin.trim())
-  : ['http://localhost:5173', 'http://127.0.0.1:5173'];
+  ? process.env.CORS_ORIGINS.split(',').map((origin) => origin.trim()).filter(Boolean)
+  : process.env.NODE_ENV === 'production'
+    ? [] // Production frontend uses same-origin requests; no wildcard/localhost CORS.
+    : ['http://localhost:5173', 'http://127.0.0.1:5173'];
 
 app.use(cors({
   origin: CORS_ORIGINS,
@@ -69,10 +77,16 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(cookieParser());
+// Authenticated financial responses must not be stored in shared browser caches.
+app.use('/api', (req, res, next) => {
+  res.set('Cache-Control', 'no-store');
+  next();
+});
 app.use('/api', apiLimiter);
 
 app.get('/api/health', (req, res) => {
-  res.json({ ok: true });
+  const ready = mongoose.connection.readyState === 1;
+  res.status(ready ? 200 : 503).json({ ok: ready });
 });
 
 app.use('/api/auth', require('./routes/authRoutes'));

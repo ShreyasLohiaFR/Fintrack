@@ -3,14 +3,22 @@ const User = require('../models/User');
 const { isSupportedCurrency, SUPPORTED_CURRENCIES, DEFAULT_CURRENCY } = require('../utils/currency');
 
 const AUTH_COOKIE = 'fintrack_token';
-const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+// JWT expiry and cookie Max-Age must agree, otherwise the browser retains
+// a stale session cookie for weeks after the token has expired.
+const tokenDurationMs = () => {
+  const value = process.env.JWT_EXPIRES_IN || '30d';
+  const match = /^(\d+)([mhd])$/.exec(value);
+  if (!match) return 30 * 24 * 60 * 60 * 1000;
+  const unit = { m: 60_000, h: 3_600_000, d: 86_400_000 };
+  return Number(match[1]) * unit[match[2]];
+};
 
 const cookieOptions = () => ({
   httpOnly: true,
   sameSite: 'strict',
   secure: process.env.NODE_ENV === 'production',
   path: '/',
-  maxAge: THIRTY_DAYS_MS
+  maxAge: tokenDurationMs()
 });
 
 const publicUser = (user) => ({
@@ -50,8 +58,8 @@ exports.register = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Name, email, and password must be text' });
     }
 
-    if (password.length < 6) {
-      return res.status(400).json({ success: false, message: 'Password must be at least 6 characters' });
+    if (password.length < 10) {
+      return res.status(400).json({ success: false, message: 'Password must be at least 10 characters' });
     }
 
     if (password.length > 72) {
