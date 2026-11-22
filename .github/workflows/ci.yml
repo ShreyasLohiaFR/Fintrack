@@ -22,6 +22,9 @@ jobs:
           cache-dependency-path: server/package-lock.json
       - name: Install backend dependencies
         run: npm ci --prefix server
+      - name: Preload temporary MongoDB for reliable CI startup
+        run: |
+          node -e "const { MongoMemoryServer } = require('./server/node_modules/mongodb-memory-server'); (async () => { const db = await MongoMemoryServer.create(); await db.stop(); })().catch(err => { console.error(err); process.exit(1); });"
       - name: Run isolated integration tests
         run: npm test --prefix server -- --runInBand
 
