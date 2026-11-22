@@ -1,0 +1,52 @@
+name: Capture real app screenshots
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'client/**'
+      - 'scripts/capture-screenshots.cjs'
+      - '.github/workflows/screenshots.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  screenshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+      - name: Install and build frontend
+        run: |
+          npm ci --prefix client
+          npm run build --prefix client
+      - name: Install Playwright and Chromium
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Start built app and capture pages
+        run: |
+          npm run preview --prefix client -- --host 127.0.0.1 --port 4173 > /tmp/fintrack-vite.log 2>&1 &
+          for i in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:4173/ > /dev/null; then break; fi
+            sleep 1
+          done
+          node scripts/capture-screenshots.cjs
+      - name: Commit updated screenshots
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs/screenshots/
+          if ! git diff --cached --quiet; then
+            git commit -m "docs: capture actual FinTrack UI screenshots"
+            git push
+          fi
