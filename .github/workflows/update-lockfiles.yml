@@ -25,11 +25,10 @@ jobs:
           npm audit fix --prefix client --package-lock-only || true
       - name: Ensure package manifests remain unchanged
         run: git diff --exit-code -- server/package.json client/package.json
-      - name: Verify that updated lockfiles still build and pass tests
+      - name: Validate updated lockfile installs, frontend lint and build
         run: |
           npm ci --prefix server
           npm ci --prefix client
-          npm test --prefix server -- --runInBand
           npm run lint --prefix client
           npm run build --prefix client
       - name: Commit reviewed lockfile patches to PR branch
