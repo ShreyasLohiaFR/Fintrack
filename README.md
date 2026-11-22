@@ -154,6 +154,14 @@ npm start          # starts the Express server; it serves the SPA from client/di
 
 ---
 
+## Screenshots
+
+The repository contains a [screenshot workflow](.github/workflows/screenshots.yml) that builds the real React frontend and captures its **landing, sign-in, and registration pages** in Chromium. It can be started from **GitHub → Actions → Capture real app screenshots → Run workflow**.
+
+Screenshots will be placed in `docs/screenshots/` after a successful run. No screenshots of a logged-in dashboard are included until a safe demo dataset is available.
+
+---
+
 ## Deploy to Render (full-stack)
 
 FinTrack is designed to run as **one web service**: Express serves both `/api/*` and the built React frontend. A persistent external MongoDB database is **required** in production; the development-only local database fallback is intentionally disabled.
