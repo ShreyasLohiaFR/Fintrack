@@ -1,0 +1,18 @@
+{
+  "name": "fintrack",
+  "version": "1.0.0",
+  "description": "FinTrack - Personal Finance Management",
+  "scripts": {
+    "install-all": "npm install && npm install --prefix server && npm install --prefix client",
+    "dev:server": "npm run dev --prefix server",
+    "dev:client": "npm run dev --prefix client",
+    "dev": "concurrently -n api,web -c cyan,magenta \"npm:dev:server\" \"npm:dev:client\"",
+    "start": "npm start --prefix server",
+    "lint": "npm run lint --prefix client",
+    "test": "npm test --prefix server",
+    "build": "npm run build --prefix client"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.6"
+  }
+}
