@@ -1,0 +1,43 @@
+name: One-time safe dependency updates
+
+on:
+  push:
+    branches: [improve/security-ci-2026-11-22]
+    paths:
+      - '.github/workflows/update-lockfiles.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-lockfiles:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Patch vulnerable dependencies without forced major upgrades
+        run: |
+          npm audit fix --prefix server --package-lock-only || true
+          npm audit fix --prefix client --package-lock-only || true
+      - name: Ensure package manifests remain unchanged
+        run: git diff --exit-code -- server/package.json client/package.json
+      - name: Verify that updated lockfiles still build and pass tests
+        run: |
+          npm ci --prefix server
+          npm ci --prefix client
+          npm test --prefix server -- --runInBand
+          npm run lint --prefix client
+          npm run build --prefix client
+      - name: Commit reviewed lockfile patches to PR branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add server/package-lock.json client/package-lock.json
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: apply nonbreaking dependency security patches"
+            git push origin HEAD:improve/security-ci-2026-11-22
+          fi
