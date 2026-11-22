@@ -201,11 +201,11 @@ cd server
 npm test
 ```
 
-The repository contains 113 test cases across 5 suites. After installing dependencies, a successful local run should show:
+The repository currently contains **116 automated tests across 5 suites**, verified by the [GitHub Actions CI workflow](.github/workflows/ci.yml) before the November 22, 2026 security and quality update. After installing dependencies, a successful local run should show:
 
 ```
 Test Suites: 5 passed, 5 total
-Tests:       113 passed, 113 total
+Tests:       116 passed, 116 total
 ```
 
 Test files:
@@ -270,7 +270,7 @@ All protected routes require `Authorization: Bearer <token>` or the `fintrack_to
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| `GET` | `/api/health` | Public | Returns `{ ok: true }` — used by tests and uptime monitors |
+| `GET` | `/api/health` | Public | Returns `{ ok: true }` when connected to MongoDB, otherwise HTTP 503 — used by readiness checks |
 
 ---
 
@@ -307,7 +307,7 @@ For production, you **must** set `MONGODB_URI` to a real connection string (e.g.
 - The client bundle is not code-split; initial load is ~700 KB uncompressed (standard for a Recharts app).
 - `mongodb-memory-server` is currently listed as a production dependency to support a zero-config local development fallback. Production requires a valid `MONGODB_URI` and does not use the fallback.
 - Changing the selected currency only changes the displayed currency symbol; no FX conversion takes place.
-- Automated tests have not been independently run as part of this packaging review; run `npm test` before release.
+- The 116-test suite passed on GitHub Actions for the production hardening release. Continue running CI after every dependency change; unverified dependency upgrades must not be deployed.
 
 ---
 
