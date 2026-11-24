@@ -162,6 +162,14 @@ describe('GET /api/transactions', () => {
   let token;
   beforeEach(async () => { token = await registerAndLogin(); });
 
+  it.each(['type=expense&type=income', 'search=a&search=b', 'page=9007199254740992', 'page=9007199254740991&limit=1000'])(
+    'rejects ambiguous or unsafe query %s', async (query) => {
+      const res = await authed(token).get('/api/transactions?' + query);
+      expect(res.status).toBe(400);
+      expect(res.body.success).toBe(false);
+    }
+  );
+
   it('returns an empty list for a new user', async () => {
     const res = await authed(token).get('/api/transactions');
     expect(res.status).toBe(200);

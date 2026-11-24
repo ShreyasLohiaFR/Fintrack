@@ -51,6 +51,13 @@ exports.getTransactions = async (req, res, next) => {
     const query = { user: req.user.id };
     const sortBy = SORT_OPTIONS.includes(sort) ? sort : '-date';
 
+    // Reject repeated or structured query parameters before building Mongo filters.
+    if ([type, category, startDate, endDate, sort, search, page, limit].some(
+      value => value !== undefined && typeof value !== 'string'
+    )) {
+      return res.status(400).json({ success: false, message: 'Filters must be single text values' });
+    }
+
     if (type) query.type = type;
     if (category) query.category = category;
 
@@ -96,7 +103,7 @@ exports.getTransactions = async (req, res, next) => {
     if (wantsPaging) {
       if (page !== undefined) pageNum = Number(page);
       if (limit !== undefined) limitNum = Number(limit);
-      if (!Number.isInteger(pageNum) || pageNum < 1) {
+      if (!Number.isSafeInteger(pageNum) || pageNum < 1 || !Number.isSafeInteger((pageNum - 1) * limitNum)) {
         return res.status(400).json({ success: false, message: 'Page must be a positive integer' });
       }
       if (!Number.isInteger(limitNum) || limitNum < 1 || limitNum > 1000) {
