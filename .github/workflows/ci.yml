@@ -44,9 +44,7 @@ jobs:
   dependency-audit:
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    # Existing third-party dependency advisories must be reviewed before
-    # changing major versions. Display issues now; Dependabot opens patch PRs.
-    continue-on-error: true
+    # Audit both production dependency trees; high/critical findings block release.
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -55,4 +53,5 @@ jobs:
       - name: Audit backend production dependencies
         run: npm audit --prefix server --omit=dev --audit-level=high
       - name: Audit frontend production dependencies
+        if: ${{ !cancelled() }}
         run: npm audit --prefix client --omit=dev --audit-level=high
