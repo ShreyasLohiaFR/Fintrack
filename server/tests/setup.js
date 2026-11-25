@@ -58,7 +58,21 @@ async function connect() {
     await mongoose.disconnect();
   }
 
-  await mongoose.connect(uri);
+  // This is a disposable, standalone IPv4 loopback server. Avoid topology
+  // discovery and fail explicitly before Jest's suite-wide timeout.
+  try {
+    await mongoose.connect(uri, {
+      directConnection: true,
+      family: 4,
+      serverSelectionTimeoutMS: 10000,
+      connectTimeoutMS: 5000
+    });
+    await mongoose.connection.db.admin().ping();
+  } catch (error) {
+    console.error('Isolated MongoDB connection failed:', error.name, error.message);
+    await disconnect();
+    throw error;
+  }
 }
 
 /**
