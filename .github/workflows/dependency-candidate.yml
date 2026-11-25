@@ -1,0 +1,37 @@
+name: Dependency remediation candidate
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  validate:
+    if: github.head_ref == 'portfolio/auth-regression-hardening' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Generate dependency changes without force upgrades
+        run: |
+          npm audit fix --prefix server --package-lock-only --ignore-scripts --omit=dev
+          npm install --prefix client --package-lock-only --ignore-scripts --save-exact react-router-dom@7.18.7
+          npm audit fix --prefix client --package-lock-only --ignore-scripts --omit=dev
+      - name: Export candidate manifest and lockfile patch
+        run: git diff --no-color -- server/package.json server/package-lock.json client/package.json client/package-lock.json | sed 's/^/LOCKPATCH:/'
+      - name: Audit candidate trees
+        run: |
+          npm audit --prefix server --omit=dev --audit-level=high
+          npm audit --prefix client --omit=dev --audit-level=high
+      - name: Test candidate trees
+        run: |
+          npm ci --prefix server
+          npm test --prefix server -- --runInBand
+          npm ci --prefix client
+          npm run lint --prefix client
+          npm run build --prefix client
