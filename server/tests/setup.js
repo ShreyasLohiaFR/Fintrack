@@ -62,6 +62,10 @@ async function connect() {
   // discovery and fail explicitly before Jest's suite-wide timeout.
   try {
     await mongoose.connect(uri, {
+      // NODE-7832: Jest lacks the dynamic-import callback used by MongoDB
+      // driver >=7.6 when resolving its default OS runtime adapter.
+      // Supply Node's actual OS module explicitly; keep real handshake and DB.
+      runtimeAdapters: { os: require('node:os') },
       directConnection: true,
       family: 4,
       serverSelectionTimeoutMS: 10000,
