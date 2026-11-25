@@ -8,6 +8,7 @@
 'use strict';
 
 const request = require('supertest');
+const jwt = require('jsonwebtoken');
 const { connect, disconnect, clearDatabase } = require('./setup');
 
 let app;
@@ -110,6 +111,17 @@ describe('POST /api/auth/register', () => {
     expect(res.body.message).toMatch(/at least 10 characters/);
   });
 
+  it('rejects a multibyte password exceeding bcrypt’s 72-byte limit', async () => {
+    const res = await registerUser({ ...VALID_USER, password: 'é'.repeat(37) });
+    expect(res.status).toBe(400);
+    expect(res.body.message).toMatch(/72 UTF-8 bytes/);
+  });
+
+  it('accepts a multibyte password of exactly 72 UTF-8 bytes', async () => {
+    const res = await registerUser({ ...VALID_USER, password: 'é'.repeat(36) });
+    expect(res.status).toBe(201);
+  });
+
   it('issues an httpOnly, SameSite=Strict session cookie with a JWT-aligned lifetime', async () => {
     const res = await registerUser();
     expect(res.status).toBe(201);
@@ -199,6 +211,30 @@ describe('GET /api/auth/me', () => {
     const res = await request(app).get('/api/auth/me');
     expect(res.status).toBe(401);
     expect(res.body.success).toBe(false);
+  });
+
+  it('rejects a validly signed token using an unapproved algorithm', async () => {
+    const token = await getToken();
+    const { id } = jwt.decode(token);
+    const alternative = jwt.sign({ id }, process.env.JWT_SECRET, { algorithm: 'HS512', expiresIn: '1h' });
+    const res = await request(app).get('/api/auth/me').set('Authorization', `Bearer ${alternative}`);
+    expect(res.status).toBe(401);
+  });
+
+  it('rejects expired HS256 tokens', async () => {
+    const token = await getToken();
+    const { id } = jwt.decode(token);
+    const expired = jwt.sign({ id }, process.env.JWT_SECRET, { algorithm: 'HS256', expiresIn: -60 });
+    const res = await request(app).get('/api/auth/me').set('Authorization', `Bearer ${expired}`);
+    expect(res.status).toBe(401);
+  });
+
+  it('rejects HS256 tokens signed with a different secret', async () => {
+    const token = await getToken();
+    const { id } = jwt.decode(token);
+    const invalid = jwt.sign({ id }, 'different-test-only-secret-123456789', { algorithm: 'HS256', expiresIn: '1h' });
+    const res = await request(app).get('/api/auth/me').set('Authorization', `Bearer ${invalid}`);
+    expect(res.status).toBe(401);
   });
 
   it('returns 401 with a malformed token', async () => {

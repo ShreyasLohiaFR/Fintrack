@@ -22,6 +22,13 @@ jobs:
           cache-dependency-path: server/package-lock.json
       - name: Install backend dependencies
         run: npm ci --prefix server
+      - name: Prepare isolated MongoDB test binary
+        working-directory: server
+        timeout-minutes: 5
+        env:
+          MONGOMS_DEBUG: "1"
+        run: |
+          node -e "require('mongodb-memory-server').MongoMemoryServer.create().then(server => server.stop()).catch(error => { console.error(error); process.exit(1); })"
       - name: Run isolated integration tests
         run: npm test --prefix server -- --runInBand
 
