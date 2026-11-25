@@ -30,6 +30,7 @@ const publicUser = (user) => ({
 
 const createToken = (userId) => {
   return jwt.sign({ id: userId }, process.env.JWT_SECRET, {
+    algorithm: 'HS256',
     expiresIn: process.env.JWT_EXPIRES_IN || '30d'
   });
 };
@@ -62,8 +63,8 @@ exports.register = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Password must be at least 10 characters' });
     }
 
-    if (password.length > 72) {
-      return res.status(400).json({ success: false, message: 'Password cannot be longer than 72 characters' });
+    if (Buffer.byteLength(password, 'utf8') > 72) {
+      return res.status(400).json({ success: false, message: 'Password cannot exceed 72 UTF-8 bytes' });
     }
 
     const existingUser = await User.findOne({ email: email.toLowerCase().trim() });
